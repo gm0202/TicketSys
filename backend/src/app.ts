@@ -43,7 +43,7 @@ export class App {
     private initializeMiddlewares() {
         this.app.use(cors({
             origin: [
-                'https://ticket-booking-system-production-10ea.up.railway.app',
+                'https://ticket-booking-system-omega.vercel.app',
                 'http://localhost:5173',
                 'http://localhost:3000'
             ],
