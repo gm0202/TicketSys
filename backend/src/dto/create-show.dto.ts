@@ -1,4 +1,4 @@
-import { IsString, IsDateString, IsInt, Min, IsOptional, IsNotEmpty } from 'class-validator';
+import { IsString, IsDateString, IsInt, Min, IsOptional, IsNotEmpty, IsNumber } from 'class-validator';
 
 export class CreateShowDto {
     @IsString()
@@ -6,7 +6,7 @@ export class CreateShowDto {
     name!: string;
 
     @IsString()
-    @IsNotEmpty()
+    @IsOptional()
     description!: string;
 
     @IsDateString()
@@ -21,7 +21,7 @@ export class CreateShowDto {
     @Min(1)
     totalSeats!: number;
 
-    @IsInt()
+    @IsNumber()
     @Min(0)
     price!: number;
 }

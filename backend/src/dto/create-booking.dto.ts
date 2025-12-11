@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsInt, Min, IsNotEmpty } from 'class-validator';
+import { IsString, IsEmail, IsInt, Min, IsNotEmpty, IsArray } from 'class-validator';
 
 export class CreateBookingDto {
     @IsInt()
@@ -16,4 +16,9 @@ export class CreateBookingDto {
     @IsInt()
     @Min(1)
     numSeats!: number;
+
+    @IsArray()
+    @IsInt({ each: true })
+    @Min(1, { each: true })
+    seatNumbers!: number[];
 }

@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { api } from '../api/client';
-import type { CreateShowInput } from '../types';
+import type { CreateShowInput, Show } from '../types';
 
-const initialForm: CreateShowInput = {
+const initialFormDefault: CreateShowInput = {
   name: '',
   description: '',
   startTime: '',
@@ -13,17 +13,45 @@ const initialForm: CreateShowInput = {
   price: 300,
 };
 
-export function ShowForm() {
-  const [form, setForm] = useState<CreateShowInput>(initialForm);
+interface ShowFormProps {
+  initialData?: Show;
+  onSuccess?: () => void;
+  onCancel?: () => void;
+}
+
+export function ShowForm({ initialData, onSuccess, onCancel }: ShowFormProps) {
+  const [form, setForm] = useState<CreateShowInput>(initialFormDefault);
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
+  // Load initial data if provided
+  useEffect(() => {
+    if (initialData) {
+      setForm({
+        name: initialData.name,
+        description: initialData.description || '',
+        startTime: initialData.startTime.slice(0, 16), // Format to 'YYYY-MM-DDTHH:mm' for datetime-local
+        endTime: initialData.endTime ? initialData.endTime.slice(0, 16) : '',
+        totalSeats: Number(initialData.totalSeats),
+        price: Number(initialData.price || 0),
+      });
+    }
+  }, [initialData]);
+
   const mutation = useMutation({
-    mutationFn: api.createShow,
+    mutationFn: (payload: CreateShowInput) => {
+      if (initialData) {
+        return api.updateShow(initialData.id, payload);
+      }
+      return api.createShow(payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shows'] });
-      setForm(initialForm);
+      if (!initialData) {
+        setForm(initialFormDefault);
+      }
       setError(null);
+      if (onSuccess) onSuccess();
     },
     onError: (err: Error) => setError(err.message),
   });
@@ -41,10 +69,12 @@ export function ShowForm() {
     mutation.mutate(form);
   };
 
+  const isUpdate = Boolean(initialData);
+
   return (
     <div className="card" style={{ marginBottom: 16 }}>
       <div className="section-title">
-        <h2>Create Show/Trip</h2>
+        <h2>{isUpdate ? 'Update details' : 'Create Show/Trip'}</h2>
         {mutation.isPending && <span className="badge">Saving…</span>}
       </div>
       <form className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }} onSubmit={handleSubmit}>
@@ -111,10 +141,17 @@ export function ShowForm() {
         </label>
         <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 8, alignItems: 'center' }}>
           <button className="btn" type="submit" disabled={mutation.isPending}>
-            Create show
+            {isUpdate ? 'Update' : 'Create show'}
           </button>
+
+          {isUpdate && onCancel && (
+            <button className="btn secondary" type="button" onClick={onCancel}>
+              Cancel
+            </button>
+          )}
+
           {error && <span className="status-pill failed">{error}</span>}
-          {mutation.isSuccess && !error && <span className="status-pill confirmed">Created</span>}
+          {mutation.isSuccess && !error && !isUpdate && <span className="status-pill confirmed">Created</span>}
         </div>
       </form>
     </div>

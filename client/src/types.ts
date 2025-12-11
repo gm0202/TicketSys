@@ -77,5 +77,6 @@ export interface CreateBookingInput {
   customerName: string;
   customerEmail: string;
   numSeats: number;
+  seatNumbers: number[];
 }
 
