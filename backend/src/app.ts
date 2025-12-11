@@ -44,7 +44,7 @@ export class App {
         this.app.use(cors());
         this.app.use(json());
         this.app.use(urlencoded({ extended: true }));
-        
+
         // Add validation middleware
         this.app.use((req, res, next) => {
             if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
@@ -91,8 +91,8 @@ export class App {
             };
 
             const specs = swaggerJsdoc(options);
-            this.app.use('/api-docs', 
-                swaggerUi.serve, 
+            this.app.use('/api-docs',
+                swaggerUi.serve,
                 swaggerUi.setup(specs, {
                     explorer: true,
                     customSiteTitle: 'Ticket Booking API Docs',
@@ -113,7 +113,7 @@ export class App {
     }
 
     public listen() {
-        this.app.listen(this.port, () => {
+        this.app.listen(this.port, '0.0.0.0', () => {
             console.log(`Server is running on port ${this.port}`);
         });
     }
