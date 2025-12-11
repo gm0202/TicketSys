@@ -4,18 +4,40 @@ import { Booking, BookingStatus } from '../models/booking.entity';
 import { bookingService } from '../services/booking.service';
 import { CreateBookingDto } from '../dto/create-booking.dto';
 import { validateDto } from '../middlewares/validation.middleware';
-import {
-    ApiTags,
-    ApiOperation,
-    ApiResponse,
-    ApiBody,
-    ApiParam,
-    ApiBearerAuth
-} from '@nestjs/swagger';
 
-@ApiTags('Bookings')
-@ApiBearerAuth()
-
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     CreateBookingDto:
+ *       type: object
+ *       required:
+ *         - showId
+ *         - customerName
+ *         - customerEmail
+ *         - numSeats
+ *         - seatNumbers
+ *       properties:
+ *         showId:
+ *           type: integer
+ *           description: ID of the show
+ *         customerName:
+ *           type: string
+ *           description: Name of the customer
+ *         customerEmail:
+ *           type: string
+ *           format: email
+ *           description: Email of the customer
+ *         numSeats:
+ *           type: integer
+ *           minimum: 1
+ *           description: Number of seats
+ *         seatNumbers:
+ *           type: array
+ *           items:
+ *             type: integer
+ *           description: Array of seat numbers
+ */
 class BookingController {
     public router = require('express').Router();
     private bookingRepository = AppDataSource.getRepository(Booking);
@@ -34,26 +56,28 @@ class BookingController {
         this.router.put('/bookings/:id/confirm', this.confirmBooking.bind(this));
     }
 
-    @ApiOperation({ summary: 'Create a new booking' })
-    @ApiResponse({ status: 201, description: 'Booking created successfully' })
-    @ApiResponse({ status: 400, description: 'Validation error or invalid input' })
-    @ApiResponse({ status: 404, description: 'Show not found' })
-    @ApiResponse({ status: 409, description: 'Not enough seats available' })
-    @ApiBody({
-        type: CreateBookingDto,
-        description: 'Booking details',
-        examples: {
-            valid: {
-                summary: 'A valid booking example',
-                value: {
-                    showId: '550e8400-e29b-41d4-a716-446655440000',
-                    customerName: 'John Doe',
-                    customerEmail: 'john@example.com',
-                    numSeats: 2
-                }
-            }
-        }
-    })
+    /**
+     * @swagger
+     * /bookings:
+     *   post:
+     *     summary: Create a new booking
+     *     tags: [Bookings]
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/CreateBookingDto'
+     *     responses:
+     *       201:
+     *         description: Booking created successfully
+     *       400:
+     *         description: Validation error or invalid input
+     *       404:
+     *         description: Show not found
+     *       409:
+     *         description: Not enough seats available
+     */
     private async createBooking(req: Request, res: Response, next: NextFunction) {
         try {
             // The validated DTO is already attached to req.body by the validation middleware
@@ -87,10 +111,25 @@ class BookingController {
         }
     }
 
-    @ApiOperation({ summary: 'Get booking by ID' })
-    @ApiParam({ name: 'id', description: 'Booking ID', example: '550e8400-e29b-41d4-a716-446655440000' })
-    @ApiResponse({ status: 200, description: 'Booking found' })
-    @ApiResponse({ status: 404, description: 'Booking not found' })
+    /**
+     * @swagger
+     * /bookings/{id}:
+     *   get:
+     *     summary: Get booking by ID
+     *     tags: [Bookings]
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         schema:
+     *           type: string
+     *         required: true
+     *         description: Booking ID
+     *     responses:
+     *       200:
+     *         description: Booking found
+     *       404:
+     *         description: Booking not found
+     */
     private async getBookingById(req: Request, res: Response, next: NextFunction) {
         try {
             const booking = await bookingService.getBookingById(req.params.id);
@@ -109,11 +148,27 @@ class BookingController {
         }
     }
 
-    @ApiOperation({ summary: 'Cancel a booking' })
-    @ApiParam({ name: 'id', description: 'Booking ID', example: '550e8400-e29b-41d4-a716-446655440000' })
-    @ApiResponse({ status: 200, description: 'Booking cancelled successfully' })
-    @ApiResponse({ status: 400, description: 'Cannot cancel booking' })
-    @ApiResponse({ status: 404, description: 'Booking not found' })
+    /**
+     * @swagger
+     * /bookings/{id}/cancel:
+     *   put:
+     *     summary: Cancel a booking
+     *     tags: [Bookings]
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         schema:
+     *           type: string
+     *         required: true
+     *         description: Booking ID
+     *     responses:
+     *       200:
+     *         description: Booking cancelled successfully
+     *       400:
+     *         description: Cannot cancel booking
+     *       404:
+     *         description: Booking not found
+     */
     private async cancelBooking(req: Request, res: Response, next: NextFunction) {
         try {
             const booking = await bookingService.cancelBooking(req.params.id);
@@ -139,11 +194,27 @@ class BookingController {
         }
     }
 
-    @ApiOperation({ summary: 'Confirm a booking' })
-    @ApiParam({ name: 'id', description: 'Booking ID', example: '550e8400-e29b-41d4-a716-446655440000' })
-    @ApiResponse({ status: 200, description: 'Booking confirmed successfully' })
-    @ApiResponse({ status: 400, description: 'Cannot confirm booking' })
-    @ApiResponse({ status: 404, description: 'Booking not found' })
+    /**
+     * @swagger
+     * /bookings/{id}/confirm:
+     *   put:
+     *     summary: Confirm a booking
+     *     tags: [Bookings]
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         schema:
+     *           type: string
+     *         required: true
+     *         description: Booking ID
+     *     responses:
+     *       200:
+     *         description: Booking confirmed successfully
+     *       400:
+     *         description: Cannot confirm booking
+     *       404:
+     *         description: Booking not found
+     */
     private async confirmBooking(req: Request, res: Response, next: NextFunction) {
         try {
             const booking = await bookingService.confirmBooking(req.params.id);
@@ -169,9 +240,23 @@ class BookingController {
         }
     }
 
-    @ApiOperation({ summary: 'Get all bookings for a show' })
-    @ApiParam({ name: 'showId', description: 'Show ID', example: '550e8400-e29b-41d4-a716-446655440000' })
-    @ApiResponse({ status: 200, description: 'List of bookings' })
+    /**
+     * @swagger
+     * /bookings/show/{showId}:
+     *   get:
+     *     summary: Get all bookings for a show
+     *     tags: [Bookings]
+     *     parameters:
+     *       - in: path
+     *         name: showId
+     *         schema:
+     *           type: string
+     *         required: true
+     *         description: Show ID
+     *     responses:
+     *       200:
+     *         description: List of bookings
+     */
     private async getBookingsByShow(req: Request, res: Response, next: NextFunction) {
         try {
             const bookings = await this.bookingRepository.find({

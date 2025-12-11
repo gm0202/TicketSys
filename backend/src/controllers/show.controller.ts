@@ -8,6 +8,45 @@ import { CreateShowDto } from '../dto/create-show.dto';
 
 import { BookingStatus } from '../models/booking.entity';
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Show:
+ *       type: object
+ *       required:
+ *         - name
+ *         - startTime
+ *         - totalSeats
+ *         - price
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: The auto-generated id of the show
+ *         name:
+ *           type: string
+ *           description: The name of the show/trip/doctor
+ *         description:
+ *           type: string
+ *           description: Optional description
+ *         startTime:
+ *           type: string
+ *           format: date-time
+ *           description: Start time
+ *         endTime:
+ *           type: string
+ *           format: date-time
+ *           description: End time
+ *         totalSeats:
+ *           type: integer
+ *           description: Total number of seats
+ *         price:
+ *           type: number
+ *           description: Price per seat
+ *         availableSeats:
+ *           type: integer
+ *           description: Calculated available seats
+ */
 class ShowController {
     public router = require('express').Router();
     private showRepository = AppDataSource.getRepository(Show);
@@ -24,6 +63,27 @@ class ShowController {
         this.router.delete('/shows/:id', this.deleteShow.bind(this));
     }
 
+    /**
+     * @swagger
+     * /shows:
+     *   get:
+     *     summary: Returns the list of all available shows
+     *     tags: [Shows]
+     *     responses:
+     *       200:
+     *         description: The list of shows
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                 data:
+     *                   type: array
+     *                   items:
+     *                     $ref: '#/components/schemas/Show'
+     */
     private async getAllShows(req: Request, res: Response, next: NextFunction) {
         try {
             const qb = this.showRepository
@@ -89,6 +149,24 @@ class ShowController {
         }
     }
 
+    /**
+     * @swagger
+     * /shows:
+     *   post:
+     *     summary: Create a new show
+     *     tags: [Shows]
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/Show'
+     *     responses:
+     *       201:
+     *         description: The show was created
+     *       400:
+     *         description: Validation error
+     */
     private async createShow(req: Request, res: Response, next: NextFunction) {
         try {
             const showData = plainToInstance(CreateShowDto, req.body);
