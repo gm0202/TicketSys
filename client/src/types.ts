@@ -16,6 +16,7 @@ export interface Booking {
   customerName?: string;
   customerEmail?: string;
   seats?: Seat[];
+  show?: Show; // Eager loaded in some responses
   createdAt?: string;
   updatedAt?: string;
 }
