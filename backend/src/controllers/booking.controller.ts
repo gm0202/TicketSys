@@ -26,11 +26,12 @@ class BookingController {
 
     private initializeRoutes() {
         this.router.post('/bookings', validateDto(CreateBookingDto), this.createBooking.bind(this));
+        // Order matters: specific routes before param routes
+        this.router.get('/bookings/pending', this.getPending.bind(this));
+        this.router.get('/bookings/show/:showId', this.getBookingsByShow.bind(this));
         this.router.get('/bookings/:id', this.getBookingById.bind(this));
         this.router.put('/bookings/:id/cancel', this.cancelBooking.bind(this));
         this.router.put('/bookings/:id/confirm', this.confirmBooking.bind(this));
-        this.router.get('/bookings/show/:showId', this.getBookingsByShow.bind(this));
-        this.router.get('/bookings/pending', this.getPending.bind(this));
     }
 
     @ApiOperation({ summary: 'Create a new booking' })
@@ -207,20 +208,7 @@ class BookingController {
             const bookings = await this.bookingRepository.find({
                 where: { status: BookingStatus.PENDING },
                 relations: ['show'],
-                order: { createdAt: 'DESC' },
-                select: {
-                    id: true,
-                    numSeats: true,
-                    status: true,
-                    createdAt: true,
-                    customerEmail: true,
-                    customerName: true,
-                    show: {
-                        id: true,
-                        name: true,
-                        startTime: true
-                    }
-                }
+                order: { createdAt: 'DESC' }
             });
             res.json({ success: true, data: bookings });
         } catch (error) {

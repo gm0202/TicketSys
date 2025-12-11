@@ -5,6 +5,7 @@ import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 import { CreateShowDto } from '../dto/create-show.dto';
 import { MoreThan } from 'typeorm';
+import { BookingStatus } from '../models/booking.entity';
 
 class ShowController {
     public router = require('express').Router();
@@ -55,13 +56,27 @@ class ShowController {
             const { entities, raw } = await qb.getRawAndEntities();
             const show = entities[0];
             const availableSeats = parseInt(raw[0]?.show_availableSeats ?? show?.totalSeats ?? 0, 10);
-            if (show) (show as any).availableSeats = availableSeats;
             
             if (!show) {
                 return res.status(404).json({ success: false, message: 'Show not found' });
             }
+
+            // Load confirmed bookings for seat map
+            const confirmedBookings = await this.showRepository
+                .createQueryBuilder('show')
+                .leftJoinAndSelect('show.bookings', 'booking')
+                .where('show.id = :id', { id: showId })
+                .andWhere('booking.status = :status', { status: BookingStatus.CONFIRMED })
+                .getOne();
             
-            res.json({ success: true, data: show });
+            res.json({ 
+                success: true, 
+                data: { 
+                    ...show, 
+                    availableSeats,
+                    bookings: confirmedBookings?.bookings ?? []
+                } 
+            });
         } catch (error) {
             next(error);
         }

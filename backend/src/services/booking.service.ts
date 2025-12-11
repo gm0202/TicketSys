@@ -9,8 +9,16 @@ const RETRY_DELAY_MS = 100;
 const BOOKING_EXPIRY_MS = 2 * 60 * 1000; // 2 minutes
 
 export class BookingService {
+    private parseId(id: string | number): number {
+        const n = typeof id === 'string' ? parseInt(id, 10) : id;
+        if (!Number.isFinite(n)) {
+            throw new Error('Invalid booking id');
+        }
+        return n;
+    }
+
     async getBookingById(id: string | number): Promise<Booking> {
-        const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
+        const numericId = this.parseId(id);
         const booking = await AppDataSource.getRepository(Booking).findOne({
             where: { id: numericId },
             relations: ['show']
@@ -97,7 +105,7 @@ export class BookingService {
     async cancelBooking(id: string | number): Promise<Booking> {
         return withRetry<Booking>(async () => {
             return AppDataSource.transaction(async (transactionalEntityManager) => {
-            const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
+            const numericId = this.parseId(id);
                     const bookingToCancel = await transactionalEntityManager
                         .createQueryBuilder(Booking, 'booking')
                         .innerJoinAndSelect('booking.show', 'show')
@@ -123,7 +131,7 @@ export class BookingService {
         return withRetry<Booking>(async () => {
             return AppDataSource.transaction(async (transactionalEntityManager) => {
                 try {
-                    const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
+                    const numericId = this.parseId(id);
                     const booking = await transactionalEntityManager
                         .createQueryBuilder(Booking, 'booking')
                         .innerJoinAndSelect('booking.show', 'show')
@@ -169,7 +177,7 @@ export class BookingService {
         return withRetry<void>(async () => {
             return AppDataSource.transaction(async (transactionalEntityManager) => {
                 try {
-                    const numericId = typeof bookingId === 'string' ? parseInt(bookingId, 10) : bookingId;
+                    const numericId = this.parseId(bookingId);
                     const booking = await transactionalEntityManager
                         .createQueryBuilder(Booking, 'booking')
                         .innerJoinAndSelect('booking.show', 'show')

@@ -169,12 +169,12 @@
   background: #f8fafc;
   cursor: pointer;
   transition: transform 0.1s ease, box-shadow 0.2s ease, background 0.2s ease;
-}
+  }
 
 .seat:hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
-}
+  }
 
 .seat.booked {
   background: #fef2f2;
