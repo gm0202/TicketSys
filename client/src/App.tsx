@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import { Navbar } from './components/Navbar';
 import { HomePage } from './pages/HomePage';
@@ -8,22 +8,23 @@ import { NotFound } from './pages/NotFound';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { useAuth } from './context/AuthContext';
-import { Navigate } from 'react-router-dom';
 import { AdminApprovalsPage } from './pages/AdminApprovalsPage';
+
+import type { ReactNode } from 'react';
 
 function App() {
   const { user } = useAuth();
   const isAuthed = user.isAuthenticated;
 
-  const RequireAuth = ({ children }: { children: JSX.Element }) => {
+  const RequireAuth = ({ children }: { children: ReactNode }) => {
     if (!isAuthed) return <Navigate to="/login" replace />;
-    return children;
+    return <>{children}</>;
   };
 
-  const RequireAdmin = ({ children }: { children: JSX.Element }) => {
+  const RequireAdmin = ({ children }: { children: ReactNode }) => {
     if (!isAuthed) return <Navigate to="/login" replace />;
     if (user.role !== 'admin') return <Navigate to="/" replace />;
-    return children;
+    return <>{children}</>;
   };
 
   return (

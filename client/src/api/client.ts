@@ -65,6 +65,12 @@ export const api = {
   deleteShow: (id: string | number) =>
     request<void>(buildPath(showPath, String(id)), { method: 'DELETE' }),
 
+  updateShow: (id: string | number, payload: CreateShowInput) =>
+    request<Show>(buildPath(showPath, String(id)), {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
+
   createBooking: (payload: CreateBookingInput) =>
     request<Booking>(buildPath(bookingPath), {
       method: 'POST',

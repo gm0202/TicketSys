@@ -1,8 +1,11 @@
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export function Navbar() {
   const { user, logout } = useAuth();
+  const location = useLocation();
+
+  const showAuthButtons = !user.isAuthenticated && (location.pathname === '/login' || location.pathname === '/signup');
 
   return (
     <header className="nav">
@@ -16,15 +19,23 @@ export function Navbar() {
           <NavLink to="/" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
             Shows
           </NavLink>
-          <NavLink to="/admin" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-            Admin
-          </NavLink>
-          <NavLink to="/signup" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-            Sign up
-          </NavLink>
-          <NavLink to="/login" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-            Login
-          </NavLink>
+
+          {user.role === 'admin' && (
+            <NavLink to="/admin" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+              Dashboard
+            </NavLink>
+          )}
+
+          {showAuthButtons && (
+            <>
+              <NavLink to="/signup" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+                Sign up
+              </NavLink>
+              <NavLink to="/login" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+                Login
+              </NavLink>
+            </>
+          )}
           {user.isAuthenticated ? (
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <span className="badge">Role: {user.role}</span>

@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppDataSource } from '../config/database';
 import { Show } from '../models/show.entity';
+import { Seat } from '../models/seat.entity';
 import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 import { CreateShowDto } from '../dto/create-show.dto';
-import { MoreThan } from 'typeorm';
+
 import { BookingStatus } from '../models/booking.entity';
 
 class ShowController {
@@ -56,7 +57,7 @@ class ShowController {
             const { entities, raw } = await qb.getRawAndEntities();
             const show = entities[0];
             const availableSeats = parseInt(raw[0]?.show_availableSeats ?? show?.totalSeats ?? 0, 10);
-            
+
             if (!show) {
                 return res.status(404).json({ success: false, message: 'Show not found' });
             }
@@ -68,14 +69,20 @@ class ShowController {
                 .where('show.id = :id', { id: showId })
                 .andWhere('booking.status = :status', { status: BookingStatus.CONFIRMED })
                 .getOne();
-            
-            res.json({ 
-                success: true, 
-                data: { 
-                    ...show, 
+
+            // Load seats
+            const seats = await AppDataSource.getRepository(Seat).find({
+                where: { showId }
+            });
+
+            res.json({
+                success: true,
+                data: {
+                    ...show,
                     availableSeats,
-                    bookings: confirmedBookings?.bookings ?? []
-                } 
+                    bookings: confirmedBookings?.bookings ?? [],
+                    seats: seats ?? []
+                }
             });
         } catch (error) {
             next(error);
@@ -86,7 +93,7 @@ class ShowController {
         try {
             const showData = plainToInstance(CreateShowDto, req.body);
             const errors = await validate(showData);
-            
+
             if (errors.length > 0) {
                 return res.status(400).json({
                     success: false,
@@ -94,13 +101,13 @@ class ShowController {
                     errors: errors.map(e => e.constraints)
                 });
             }
-            
+
             const show = this.showRepository.create(showData);
             const result = await this.showRepository.save(show);
-            res.status(201).json({ 
-                success: true, 
+            res.status(201).json({
+                success: true,
                 data: result,
-                message: 'Show created successfully' 
+                message: 'Show created successfully'
             });
         } catch (error: any) {
             if (error.code === '23505') {
@@ -120,28 +127,31 @@ class ShowController {
                 id: showId,
                 ...req.body
             });
-            
+
             if (!show) {
-                return res.status(404).json({ 
-                    success: false, 
-                    message: 'Show not found' 
+                return res.status(404).json({
+                    success: false,
+                    message: 'Show not found'
                 });
             }
-            
-            const errors = await validate(show);
+
+            const showData = plainToInstance(CreateShowDto, req.body);
+            const errors = await validate(showData);
+
             if (errors.length > 0) {
+                console.error('Update Show Validation Errors:', JSON.stringify(errors, null, 2));
                 return res.status(400).json({
                     success: false,
                     message: 'Validation failed',
                     errors: errors.map(e => e.constraints)
                 });
             }
-            
+
             const updatedShow = await this.showRepository.save(show);
-            res.json({ 
-                success: true, 
+            res.json({
+                success: true,
                 data: updatedShow,
-                message: 'Show updated successfully' 
+                message: 'Show updated successfully'
             });
         } catch (error: any) {
             if (error.code === '23505') {
@@ -164,9 +174,9 @@ class ShowController {
             });
 
             if (!show) {
-                return res.status(404).json({ 
-                    success: false, 
-                    message: 'Show not found' 
+                return res.status(404).json({
+                    success: false,
+                    message: 'Show not found'
                 });
             }
 
@@ -178,9 +188,9 @@ class ShowController {
             }
 
             const result = await this.showRepository.delete(showId);
-            res.json({ 
-                success: true, 
-                message: 'Show deleted successfully' 
+            res.json({
+                success: true,
+                message: 'Show deleted successfully'
             });
         } catch (error) {
             next(error);
