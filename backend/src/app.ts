@@ -41,7 +41,16 @@ export class App {
     }
 
     private initializeMiddlewares() {
-        this.app.use(cors());
+        this.app.use(cors({
+            origin: [
+                'https://ticket-booking-system-production-10ea.up.railway.app',
+                'http://localhost:5173',
+                'http://localhost:3000'
+            ],
+            credentials: true,
+            methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+            allowedHeaders: ['Content-Type', 'Authorization']
+        }));
         this.app.use(json());
         this.app.use(urlencoded({ extended: true }));
 
