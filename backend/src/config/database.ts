@@ -9,15 +9,16 @@ config();
 
 export const AppDataSource = new DataSource({
     type: 'postgres',
+    url: process.env.DATABASE_URL,
     host: process.env.DB_HOST,
     port: parseInt(process.env.DB_PORT || '5432'),
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE || process.env.DB_NAME,
     entities: [Show, Booking, Seat, User],
-    synchronize: process.env.NODE_ENV === 'development',
+    synchronize: true, // Ensure tables are created in production for this demo
     logging: process.env.NODE_ENV === 'development',
-    ssl: false   // ❗ Your PostgreSQL server does NOT support SSL
+    ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
 // Optional: immediately test connection
