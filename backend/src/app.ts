@@ -42,12 +42,7 @@ export class App {
 
     private initializeMiddlewares() {
         this.app.use(cors({
-            origin: [
-                'https://ticket-booking-system-omega.vercel.app',
-                'http://localhost:5173',
-                'http://localhost:3000'
-            ],
-            credentials: true,
+            origin: '*',
             methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
             allowedHeaders: ['Content-Type', 'Authorization']
         }));
