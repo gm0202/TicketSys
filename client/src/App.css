@@ -2,6 +2,7 @@
   min-height: 100vh;
 }
 
+/* Enhanced Glassmorphism Navbar */
 .nav {
   position: sticky;
   top: 0;
@@ -78,18 +79,13 @@
   padding: 24px;
 }
 
+/* Enhanced Hero Section */
 .hero {
   background: linear-gradient(135deg, #eef2ff, #e0f2fe);
   border: 1px solid #e2e8f0;
   border-radius: 20px;
   padding: 24px;
   box-shadow: 0 20px 40px rgba(79, 70, 229, 0.08);
-}
-
-.hero h1 {
-  margin: 0 0 8px;
-  font-size: 28px;
-  color: #1e293b;
 }
 
 .hero p {
@@ -116,6 +112,7 @@
   font-weight: 500;
 }
 
+/* Enhanced Table with Glassmorphism */
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -169,12 +166,12 @@
   background: #f8fafc;
   cursor: pointer;
   transition: transform 0.1s ease, box-shadow 0.2s ease, background 0.2s ease;
-  }
+}
 
 .seat:hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
-  }
+}
 
 .seat.booked {
   background: #fef2f2;
@@ -182,6 +179,7 @@
   border-color: #fecdd3;
   cursor: not-allowed;
   box-shadow: none;
+  opacity: 0.6;
 }
 
 .seat.selected {
@@ -190,6 +188,7 @@
   border-color: #c7d2fe;
 }
 
+/* Enhanced Callout */
 .callout {
   background: linear-gradient(135deg, #ecfdf3, #f0f9ff);
   border: 1px solid #bbf7d0;
