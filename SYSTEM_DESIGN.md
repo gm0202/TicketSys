@@ -139,7 +139,9 @@ Shard 4: Other regions (show_id % 4 == 3)
 - Reduced query load per database
 - Geographic data locality (faster queries)
 - Isolated failure domains
-+ Cross-shard queries require aggregation layer
+
+**Challenges:**
+- Cross-shard queries require aggregation layer
 - Schema migrations more complex
 - Rebalancing shards as data grows
 
@@ -199,7 +201,6 @@ await AppDataSource.transaction(async (manager) => {
 - Strong consistency guarantees
 - No overbooking possible
 - Built-in rollback on failure
-- Can be used with distributed systems where db is single source of truth
 
 **Limitations:**
 - Can cause contention under extreme load
@@ -230,10 +231,9 @@ if (result.affected === 0) {
 **Benefits:**
 - No locks required
 - Higher throughput for read-heavy workloads
-- Better for distributed systems with high latency
 
 **Trade-offs:**
-- Retries needed for write conflicts (higher application complexity)
+- Retries needed for write conflicts
 
 #### **Distributed Locks (Redis)**
 
@@ -254,7 +254,7 @@ try {
 }
 ```
 
-**Use Case:** Prevent race conditions across multiple servers before even hitting the DB.
+**Use Case:** Prevent race conditions across multiple servers
 
 ### 4.3 Queue-Based Booking (Event-Driven)
 
@@ -274,7 +274,7 @@ User Request → API Server → Queue (Pending Bookings) → Worker Pool → DB
 **Benefits:**
 - Decouple request handling from processing
 - Graceful degradation under load
-- Prevents database overload during spikes
+- Prevents database overload
 
 ---
 
@@ -284,16 +284,16 @@ User Request → API Server → Queue (Pending Bookings) → Worker Pool → DB
 
 1. **CDN Layer (Vercel/CloudFlare)**
    - Static assets (HTML, CSS, JS)
-   - Edge caching for global users (lower latency)
+   - Edge caching for global users
 
 2. **Application Cache (Redis)**
-   - Session data (JWT invalidation lists)
-   - API response caching (Show lists)
+   - Session data
+   - API response caching
    - Rate limiting counters
 
 3. **Database Query Cache**
    - PostgreSQL query result cache
-   - Materialized views for complex analytics queries
+   - Materialized views for analytics
 
 ### 5.2 Cache Patterns
 
@@ -321,7 +321,7 @@ async function updateShow(id: number, data: any) {
 
 - **LRU (Least Recently Used)**: Default Redis eviction
 - **TTL Expiry**: Short TTL for dynamic data (seats), long TTL for static data (show metadata)
-- **Event-Based Invalidation**: Invalidate cache explicitly on booking confirmation
+- **Event-Based Invalidation**: Invalidate cache on booking confirmation
 
 ---
 
@@ -334,11 +334,11 @@ async function updateShow(id: number, data: any) {
    - Mark as `FAILED`, release seats
 
 2. **Email Notifications**
-   - Send confirmation emails asynchronously to prevent blocking the API response
+   - Send confirmation emails asynchronously
    - Retry logic for failed deliveries
 
 3. **Analytics Pipeline**
-   - Stream booking events to data warehouse (Snowflake/BigQuery)
+   - Stream booking events to data warehouse
    - Real-time dashboards
 
 ### 6.2 Queue Architecture (RabbitMQ Example)
@@ -365,8 +365,8 @@ async function updateShow(id: number, data: any) {
 ### 6.3 Dead Letter Queue (DLQ)
 
 For failed messages:
-- Retry up to 3 times with exponential backoff
-- Move to DLQ for manual inspection if all retries fail
+- Retry up to 3 times
+- Move to DLQ for manual inspection
 - Alert on DLQ threshold
 
 ---
@@ -390,8 +390,8 @@ app.use('/api/', limiter);
 ### 7.2 Authentication & Authorization
 
 - **JWT Tokens**: Stateless auth for API servers
-- **Role-Based Access Control (RBAC)**: Admin vs User permissions in middleware
-- **API Keys**: For third-party integrations (if any)
+- **Role-Based Access Control (RBAC)**: Admin vs User permissions
+- **API Keys**: For third-party integrations
 
 ---
 
@@ -400,7 +400,7 @@ app.use('/api/', limiter);
 ### 8.1 Metrics to Track
 
 - **Request Rate**: Requests/second per endpoint
-- **Error Rate**: 4xx/5xx responses percentage
+- **Error Rate**: 4xx/5xx responses
 - **Latency**: P50, P95, P99 response times
 - **Database**: Connection pool usage, query duration
 - **Queue Depth**: Pending jobs in message queue
@@ -408,8 +408,8 @@ app.use('/api/', limiter);
 ### 8.2 Tools
 
 - **APM**: New Relic, Datadog
-- **Logging**: ELK Stack (Elasticsearch, Logstash, Kibana) or CloudWatch
-- **Alerting**: PagerDuty for critical failures (e.g., DB down, high error rate)
+- **Logging**: ELK Stack (Elasticsearch, Logstash, Kibana)
+- **Alerting**: PagerDuty for critical failures
 
 ---
 
@@ -433,30 +433,29 @@ Use Terraform or AWS CDK to define:
 
 - **Blue-Green Deployment**: Run two environments, switch traffic instantly
 - **Rolling Updates**: Gradually replace old instances with new ones
-- **Health Checks**: Ensure new instances are healthy before routing traffic via Load Balancer
+- **Health Checks**: Ensure new instances are healthy before routing traffic
 
 ---
 
 ## 10. Cost Optimization
 
 1. **Auto-Scaling**: Scale down during off-peak hours
-2. **Reserved Instances**: Commit to long-term capacity for discounts on base load
+2. **Reserved Instances**: Commit to long-term capacity for discounts
 3. **Spot Instances**: Use for non-critical workers
-4. **CDN**: Offload static content from API servers to save bandwidth
+4. **CDN**: Offload static content from API servers
 
 ---
 
 ## 11. Future Enhancements
 
-1. **GraphQL API**: More flexible querying for frontend to reduce over-fetching
-2. **WebSockets**: Real-time seat availability updates for better UX
-3. **Geo-Distributed Databases**: Multi-region deployment for global latency
+1. **GraphQL API**: More flexible querying for frontend
+2. **WebSockets**: Real-time seat availability updates
+3. **Geo-Distributed Databases**: Multi-region deployment
 4. **Serverless Functions**: For event-driven tasks (AWS Lambda)
-5. **AI/ML**: Dynamic pricing based on demand, user recommendations
+5. **AI/ML**: Dynamic pricing, fraud detection
 
 ---
 
 ## 12. Conclusion
 
 This architecture is designed to scale from thousands to millions of users while maintaining data consistency and high availability. The combination of horizontal scaling, caching, asynchronous processing, and robust concurrency controls ensures the system can handle production workloads similar to industry leaders like RedBus and BookMyShow.
-.
