@@ -24,16 +24,8 @@ Inspired by platforms like BookMyShow & RedBus, engineered to prevent **overbook
 
 
 
-
-
-
-### 🎬 Pending Booking
-<video src="./assets/pending-booking.mp4" autoplay loop muted playsinline width="800"></video>
-
 ### 🎬 Updation of Shows
-<video src="./assets/videos/updation.mp4" autoplay loop muted playsinline width="800"></video>
-
-
+![Show Booking](./assets/updation%20of%20shows.gif)
 
 
 
