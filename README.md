@@ -8,7 +8,7 @@ A full-stack ticket booking system simulating platforms like RedBus or BookMySho
 
 ## 🌐 Live Deployment
 
-- **Frontend (Vercel)**: https://ticket-booking-system-omega.vercel.app
+- **Frontend (Vercel)**: https://ticket-booking-system-lake.vercel.app/
 - **Backend (Railway)**: https://ticket-booking-system-production-10ea.up.railway.app
 - **API Documentation**: https://ticket-booking-system-production-10ea.up.railway.app/api-docs
 
