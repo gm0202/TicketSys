@@ -141,7 +141,10 @@ class ShowController {
                     ...show,
                     availableSeats,
                     bookings: confirmedBookings?.bookings ?? [],
-                    seats: seats ?? []
+                    seats: seats.map(s => ({
+                        ...s,
+                        isBooked: s.isBooked && s.bookingId !== null
+                    }))
                 }
             });
         } catch (error) {
@@ -244,28 +247,16 @@ class ShowController {
 
     private async deleteShow(req: Request, res: Response, next: NextFunction) {
         try {
-            // Check if show has any bookings
+            // Cascading delete will handle bookings and seats
             const showId = parseInt(req.params.id, 10);
-            const show = await this.showRepository.findOne({
-                where: { id: showId },
-                relations: ['bookings']
-            });
-
-            if (!show) {
+            const result = await this.showRepository.delete(showId);
+            if (result.affected === 0) {
                 return res.status(404).json({
                     success: false,
                     message: 'Show not found'
                 });
             }
 
-            if (show.bookings && show.bookings.length > 0) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Cannot delete show with existing bookings'
-                });
-            }
-
-            const result = await this.showRepository.delete(showId);
             res.json({
                 success: true,
                 message: 'Show deleted successfully'
