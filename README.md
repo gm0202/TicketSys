@@ -14,18 +14,16 @@ A full-stack ticket booking system simulating platforms like RedBus or BookMySho
 
 ---
 ### 🎬 Recording Demo
-![Recording](./assets/"Recording 2025-12-12 043511.gif")
+![Recording](./assets/Recording%202025-12-12%20043511.gif)
 
 ### 🎬 Pending Booking
-![Pending Booking](./assets/"pending booking.gif")
+![Pending Booking](./assets/pending%20booking.gif)
 
 ### 🎬 Show Booking by User
-![Show Booking](./assets/"show booking by user.gif")
+![Show Booking](./assets/show%20booking%20by%20user.gif)
 
 ### 🎬 Updation of Shows
-![Updation](./assets/"updation of shows.gif")
-
-
+![Updation](./assets/updation%20of%20shows.gif)
 
 ## 🚀 Features
 
