@@ -1,0 +1,497 @@
+{
+    "info": {
+        "name": "Ticket Booking System API",
+        "description": "Complete API collection for the Ticket Booking System - Modex Assessment Submission",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_postman_id": "ticket-booking-api-v1",
+        "version": "1.0.0"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{auth_token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "https://ticket-booking-system-production-10ea.up.railway.app/api",
+            "type": "string"
+        },
+        {
+            "key": "local_url",
+            "value": "http://localhost:3000/api",
+            "type": "string"
+        },
+        {
+            "key": "auth_token",
+            "value": "",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "Authentication",
+            "item": [
+                {
+                    "name": "Signup User",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"user\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/signup",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "signup"
+                            ]
+                        },
+                        "description": "Register a new user account. Role can be 'user' or 'admin'."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Signup Admin",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Admin User\",\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123\",\n  \"role\": \"admin\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/signup",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "signup"
+                            ]
+                        },
+                        "description": "Register a new admin account."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Login",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.data && jsonData.data.token) {",
+                                    "    pm.environment.set('auth_token', jsonData.data.token);",
+                                    "    pm.collectionVariables.set('auth_token', jsonData.data.token);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Login with email and password. Automatically saves JWT token to environment variable."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Shows",
+            "item": [
+                {
+                    "name": "Get All Shows",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/shows",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "shows"
+                            ]
+                        },
+                        "description": "Retrieve all available shows with seat availability."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Show By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/shows/1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "shows",
+                                "1"
+                            ]
+                        },
+                        "description": "Get details of a specific show including seat information."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create Show (Admin)",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{auth_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Inception\",\n  \"description\": \"A mind-bending thriller by Christopher Nolan\",\n  \"startTime\": \"2025-12-20T18:00:00Z\",\n  \"endTime\": \"2025-12-20T21:00:00Z\",\n  \"totalSeats\": 40,\n  \"price\": 250\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/shows",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "shows"
+                            ]
+                        },
+                        "description": "Create a new show. Requires admin authentication."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Show (Admin)",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{auth_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Inception (Updated)\",\n  \"description\": \"A mind-bending thriller - Updated description\",\n  \"startTime\": \"2025-12-20T19:00:00Z\",\n  \"endTime\": \"2025-12-20T22:00:00Z\",\n  \"totalSeats\": 50,\n  \"price\": 300\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/shows/1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "shows",
+                                "1"
+                            ]
+                        },
+                        "description": "Update show details. Requires admin authentication."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Show (Admin)",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{auth_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/shows/1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "shows",
+                                "1"
+                            ]
+                        },
+                        "description": "Delete a show. Requires admin authentication."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Bookings",
+            "item": [
+                {
+                    "name": "Create Booking",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"showId\": 1,\n  \"customerName\": \"Jane Smith\",\n  \"customerEmail\": \"jane@example.com\",\n  \"numSeats\": 2,\n  \"seatNumbers\": [5, 6]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/bookings",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "bookings"
+                            ]
+                        },
+                        "description": "Create a new booking for specified seats. Returns PENDING status initially."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Bookings By Show",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/bookings/show/1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "bookings",
+                                "show",
+                                "1"
+                            ]
+                        },
+                        "description": "Get all bookings for a specific show."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Pending Bookings (Admin)",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{auth_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/bookings/pending",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "bookings",
+                                "pending"
+                            ]
+                        },
+                        "description": "Get all pending bookings. Requires admin authentication."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Confirm Booking (Admin)",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{auth_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/bookings/1/confirm",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "bookings",
+                                "1",
+                                "confirm"
+                            ]
+                        },
+                        "description": "Confirm a pending booking. Changes status from PENDING to CONFIRMED. Requires admin authentication."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Cancel Booking",
+                    "request": {
+                        "method": "PUT",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/bookings/1/cancel",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "bookings",
+                                "1",
+                                "cancel"
+                            ]
+                        },
+                        "description": "Cancel a booking. Releases seats and changes status to CANCELLED."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Booking (Admin)",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{auth_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/bookings/1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "bookings",
+                                "1"
+                            ]
+                        },
+                        "description": "Delete a booking permanently. Requires admin authentication."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Health Check",
+            "item": [
+                {
+                    "name": "Root Endpoint",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "https://ticket-booking-system-production-10ea.up.railway.app/",
+                            "protocol": "https",
+                            "host": [
+                                "ticket-booking-system-production-10ea",
+                                "up",
+                                "railway",
+                                "app"
+                            ],
+                            "path": [
+                                ""
+                            ]
+                        },
+                        "description": "Health check endpoint to verify the server is running."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "API Docs (Swagger)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "https://ticket-booking-system-production-10ea.up.railway.app/api-docs",
+                            "protocol": "https",
+                            "host": [
+                                "ticket-booking-system-production-10ea",
+                                "up",
+                                "railway",
+                                "app"
+                            ],
+                            "path": [
+                                "api-docs"
+                            ]
+                        },
+                        "description": "Access Swagger UI for interactive API documentation."
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ]
+}
