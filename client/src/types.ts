@@ -16,9 +16,11 @@ export interface Booking {
   customerName?: string;
   customerEmail?: string;
   seats?: Seat[];
+  seatNumbers?: number[];
   show?: Show; // Eager loaded in some responses
   createdAt?: string;
   updatedAt?: string;
+  expiresAt?: string;
 }
 
 export interface Show {

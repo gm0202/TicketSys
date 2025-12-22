@@ -18,36 +18,55 @@ function availability(show: Show) {
 
 export function ShowCard({ show }: Props) {
   const available = availability(show);
-  const isSoon = new Date(show.startTime).getTime() - Date.now() < 3 * 60 * 60 * 1000;
+  const isSoldOut = available === 0;
 
   return (
-    <div className="card" style={{ display: 'grid', gap: 8 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <div className="label">Show</div>
-          <h3 style={{ margin: '4px 0 0', color: '#0f172a' }}>{show.name}</h3>
-        </div>
-        <span className="pill">
-          {formatDate(show.startTime)} · {formatTime(show.startTime)}
+    <div className="group flex flex-col sm:flex-row sm:items-center justify-between p-6 bg-surface border border-border rounded-lg hover:border-primary/50 transition-all duration-300 mb-4">
+      {/* Date & Time */}
+      <div className="flex flex-row sm:flex-col gap-2 sm:gap-1 min-w-[120px] mb-4 sm:mb-0">
+        <span className="text-sm font-bold text-text-primary uppercase tracking-wider">
+          {formatDate(show.startTime)}
+        </span>
+        <span className="text-sm text-text-secondary">
+          {formatTime(show.startTime)}
         </span>
       </div>
-      {show.description && <p className="muted" style={{ margin: '0 0 8px' }}>{show.description}</p>}
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-        <span className="status-pill confirmed">Total: {show.totalSeats}</span>
-        <span className={`status-pill ${available > 0 ? 'pending' : 'failed'}`}>
-          {available > 0 ? `${available} seats left` : 'Sold out'}
-        </span>
-        {isSoon && <span className="status-pill expired">Starts soon</span>}
-        {show.price !== undefined && (
-          <span className="status-pill confirmed">₹ {Number(show.price).toFixed(2)}</span>
+
+      {/* Show Details */}
+      <div className="flex-1 sm:px-8 mb-4 sm:mb-0">
+        <h3 className="text-lg font-semibold text-text-primary group-hover:text-primary transition-colors">
+          {show.name}
+        </h3>
+        {show.description && (
+          <p className="text-sm text-text-secondary mt-1 line-clamp-1">
+            {show.description}
+          </p>
         )}
       </div>
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-        <Link to={`/booking/${show.id}`} className="btn">
-          Book seats
+
+      {/* Price & Availability */}
+      <div className="flex items-center gap-6 sm:gap-8 min-w-[200px] justify-between sm:justify-end">
+        <div className="text-right">
+          <div className="text-sm font-medium text-text-primary">
+            ₹{Number(show.price || 0).toFixed(2)}
+          </div>
+          <div className={`text-xs font-medium uppercase tracking-wide mt-1 ${isSoldOut ? 'text-red-400' : 'text-emerald-400'
+            }`}>
+            {isSoldOut ? 'Sold Out' : `${available} seats`}
+          </div>
+        </div>
+
+        <Link
+          to={`/booking/${show.id}`}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${isSoldOut
+              ? 'bg-surface border border-border text-text-secondary cursor-not-allowed'
+              : 'bg-primary text-white hover:bg-primary-dark shadow-[0_0_15px_rgba(99,102,241,0.3)]'
+            }`}
+          onClick={(e) => isSoldOut && e.preventDefault()}
+        >
+          {isSoldOut ? 'Unavailable' : 'Book'}
         </Link>
       </div>
     </div>
   );
 }
-

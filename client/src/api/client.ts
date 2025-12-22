@@ -55,7 +55,7 @@ function buildPath(base: string, suffix = ''): string {
 }
 
 export const api = {
-  getShows: () => request<Show[]>(buildPath(showPath)),
+  getShows: (all = false) => request<Show[]>(buildPath(showPath) + (all ? '?all=true' : '')),
   getShow: (id: string | number) => request<Show>(buildPath(showPath, String(id))),
   createShow: (payload: CreateShowInput) =>
     request<Show>(buildPath(showPath), {
@@ -83,6 +83,7 @@ export const api = {
   getBookingsByShow: (showId: string | number) =>
     request<Booking[]>(buildPath(bookingPath, `show/${showId}`)),
   getPendingBookings: () => request<Booking[]>(buildPath(bookingPath, 'pending')),
+  getMyBookings: (email: string) => request<Booking[]>(buildPath(bookingPath, `my?email=${encodeURIComponent(email)}`)),
   signup: (payload: SignupInput) =>
     request<AuthResponse>('/auth/signup', { method: 'POST', body: JSON.stringify(payload) }),
   login: (payload: LoginInput) =>

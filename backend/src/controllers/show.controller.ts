@@ -88,10 +88,16 @@ class ShowController {
         try {
             const qb = this.showRepository
                 .createQueryBuilder('show')
-                .leftJoin('show.bookings', 'booking', 'booking.status IN (:...statuses)', { statuses: ['pending', 'confirmed'] })
-                .addSelect('show.totalSeats - COALESCE(SUM(booking.numSeats), 0)', 'show_availableSeats')
-                .where('show.startTime > NOW()')
-                .orderBy('show.startTime', 'ASC')
+                .leftJoin('show.bookings', 'booking',
+                    '(booking.status = :confirmed OR (booking.status = :pending AND (booking.expiresAt IS NULL OR booking.expiresAt > NOW())))',
+                    { confirmed: BookingStatus.CONFIRMED, pending: BookingStatus.PENDING })
+                .addSelect('show.totalSeats - COALESCE(SUM(booking.numSeats), 0)', 'show_availableSeats');
+
+            if (req.query.all !== 'true') {
+                qb.where('show.startTime > NOW()');
+            }
+
+            qb.orderBy('show.startTime', 'ASC')
                 .groupBy('show.id');
 
             const { entities, raw } = await qb.getRawAndEntities();
@@ -110,7 +116,9 @@ class ShowController {
             const showId = parseInt(req.params.id, 10);
             const qb = this.showRepository
                 .createQueryBuilder('show')
-                .leftJoin('show.bookings', 'booking', 'booking.status IN (:...statuses)', { statuses: ['pending', 'confirmed'] })
+                .leftJoin('show.bookings', 'booking',
+                    '(booking.status = :confirmed OR (booking.status = :pending AND (booking.expiresAt IS NULL OR booking.expiresAt > NOW())))',
+                    { confirmed: BookingStatus.CONFIRMED, pending: BookingStatus.PENDING })
                 .addSelect('show.totalSeats - COALESCE(SUM(booking.numSeats), 0)', 'show_availableSeats')
                 .where('show.id = :id', { id: showId })
                 .groupBy('show.id');
@@ -122,17 +130,21 @@ class ShowController {
                 return res.status(404).json({ success: false, message: 'Show not found' });
             }
 
-            // Load confirmed bookings for seat map
-            const confirmedBookings = await this.showRepository
+            // Load bookings for seat map (include valid pending ones)
+            const activeBookings = await this.showRepository
                 .createQueryBuilder('show')
                 .leftJoinAndSelect('show.bookings', 'booking')
                 .where('show.id = :id', { id: showId })
-                .andWhere('booking.status = :status', { status: BookingStatus.CONFIRMED })
+                .andWhere('(booking.status = :confirmed OR (booking.status = :pending AND (booking.expiresAt IS NULL OR booking.expiresAt > NOW())))',
+                    { confirmed: BookingStatus.CONFIRMED, pending: BookingStatus.PENDING })
                 .getOne();
 
-            // Load seats
+            // Load seats - we need to know if they are booked by an ACTIVE booking
+            // The Seat entity has `isBooked`, but that might be stale if we don't clear it on expiry (we rely on booking status).
+            // A better way is to load seats and check their booking status.
             const seats = await AppDataSource.getRepository(Seat).find({
-                where: { showId }
+                where: { showId },
+                relations: ['booking']
             });
 
             res.json({
@@ -140,11 +152,20 @@ class ShowController {
                 data: {
                     ...show,
                     availableSeats,
-                    bookings: confirmedBookings?.bookings ?? [],
-                    seats: seats.map(s => ({
-                        ...s,
-                        isBooked: s.isBooked && s.bookingId !== null
-                    }))
+                    bookings: activeBookings?.bookings ?? [],
+                    seats: seats.map(s => {
+                        // Check if seat is effectively booked
+                        const isBooked = s.isBooked && s.booking && (
+                            s.booking.status === BookingStatus.CONFIRMED ||
+                            (s.booking.status === BookingStatus.PENDING && (!s.booking.expiresAt || new Date(s.booking.expiresAt) > new Date()))
+                        );
+
+                        return {
+                            ...s,
+                            isBooked: !!isBooked,
+                            bookingId: isBooked ? s.bookingId : null
+                        };
+                    })
                 }
             });
         } catch (error) {

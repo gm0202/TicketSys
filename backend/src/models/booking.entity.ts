@@ -46,6 +46,9 @@ export class Booking {
   @Column({ name: 'num_seats' })
   numSeats!: number;
 
+  @Column('simple-array', { name: 'seat_numbers', nullable: true })
+  seatNumbers: number[] = [];
+
   @Column({ name: 'customer_name', type: 'varchar', length: 255, nullable: true })
   customerName?: string;
 
@@ -58,26 +61,31 @@ export class Booking {
   @CreateDateColumn({ name: 'created_at', type: 'timestamp with time zone' })
   createdAt!: Date;
 
-  @UpdateDateColumn({ 
-    name: 'updated_at', 
+  @UpdateDateColumn({
+    name: 'updated_at',
     type: 'timestamp with time zone',
     onUpdate: 'CURRENT_TIMESTAMP'
   })
   updatedAt!: Date;
 
-  @Column({ 
-    name: 'booking_time', 
-    type: 'timestamp with time zone', 
-    default: () => 'CURRENT_TIMESTAMP' 
+  @Column({
+    name: 'booking_time',
+    type: 'timestamp with time zone',
+    default: () => 'CURRENT_TIMESTAMP'
   })
   bookingTime!: Date;
 
+  @Column({ name: 'expires_at', type: 'timestamp with time zone', nullable: true })
+  expiresAt: Date | null = null;
+
   // Helper method to check if booking is active
   isActive(): boolean {
-    return [
-      BookingStatus.PENDING,
-      BookingStatus.CONFIRMED
-    ].includes(this.status);
+    if (this.status === BookingStatus.CONFIRMED) return true;
+    if (this.status === BookingStatus.PENDING) {
+      if (this.expiresAt && new Date() > this.expiresAt) return false;
+      return true;
+    }
+    return false;
   }
 
   // Mark booking as confirmed

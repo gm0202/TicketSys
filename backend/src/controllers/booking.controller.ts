@@ -50,6 +50,7 @@ class BookingController {
         this.router.post('/bookings', validateDto(CreateBookingDto), this.createBooking.bind(this));
         // Order matters: specific routes before param routes
         this.router.get('/bookings/pending', this.getPending.bind(this));
+        this.router.get('/bookings/my', this.getMyBookings.bind(this));
         this.router.get('/bookings/show/:showId', this.getBookingsByShow.bind(this));
         this.router.get('/bookings/:id', this.getBookingById.bind(this));
         this.router.put('/bookings/:id/cancel', this.cancelBooking.bind(this));
@@ -296,6 +297,19 @@ class BookingController {
                 relations: ['show'],
                 order: { createdAt: 'DESC' }
             });
+            res.json({ success: true, data: bookings });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    private async getMyBookings(req: Request, res: Response, next: NextFunction) {
+        try {
+            const email = req.query.email as string;
+            if (!email) {
+                return res.status(400).json({ success: false, message: 'Email is required' });
+            }
+            const bookings = await bookingService.getUserBookings(email);
             res.json({ success: true, data: bookings });
         } catch (error) {
             next(error);

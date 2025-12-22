@@ -1,34 +1,38 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { useShowContext } from '../context/ShowContext';
 import { useShow } from '../hooks/useShows';
-import type { BookingStatus, CreateBookingInput, Show } from '../types';
+import type { CreateBookingInput, Show } from '../types';
 import { formatDate, formatTime } from '../utils/format';
 import { SeatGrid } from '../components/SeatGrid';
-import { BookingStatusBadge } from '../components/BookingStatusBadge';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
-
 import { useAuth } from '../context/AuthContext';
 
 function bookedSeats(show?: Show): Set<number> {
   if (!show) return new Set();
-
-  // Prioritize explicit seat records
   if (show.seats?.length) {
     return new Set(show.seats.filter((s) => s.isBooked).map((s) => s.seatNumber));
   }
-
-  // Fallback to sequential calculation for legacy data
   if (show.bookings?.length) {
-    const confirmed = show.bookings.filter((b) => b.status === 'confirmed');
+    // Include Confirmed AND Active Pending bookings
+    const taken = show.bookings.filter((b) => {
+      if (b.status === 'confirmed') return true;
+      if (b.status === 'pending') {
+        // Check expiry
+        if (b.expiresAt && new Date(b.expiresAt) > new Date()) return true;
+        return false;
+      }
+      return false;
+    });
+
     const seatNumbers: number[] = [];
-    confirmed.forEach((booking) => {
-      const bookedCount = booking.numSeats || 0;
-      const start = seatNumbers.length + 1;
-      for (let i = 0; i < bookedCount; i += 1) {
-        seatNumbers.push(start + i);
+    taken.forEach((booking) => {
+      // Now that we added seatNumbers to the entity, this should work if populated
+      if (booking.seatNumbers && Array.isArray(booking.seatNumbers)) {
+        // TypeORM simple-array returns strings sometimes? No, we typed it as number[] but it might be strings in runtime.
+        booking.seatNumbers.forEach(s => seatNumbers.push(Number(s)));
       }
     });
     return new Set(seatNumbers);
@@ -36,24 +40,115 @@ function bookedSeats(show?: Show): Set<number> {
   return new Set();
 }
 
+function BookingSuccessCard({ booking, onClear }: { booking: import('../types').Booking; onClear: () => void }) {
+  const [timeLeft, setTimeLeft] = useState<string>('');
+  const [isExpired, setIsExpired] = useState(false);
+
+  useEffect(() => {
+    if (!booking.expiresAt) return;
+
+    const interval = setInterval(() => {
+      const now = new Date().getTime();
+      const expiry = new Date(booking.expiresAt!).getTime();
+      const diff = expiry - now;
+
+      if (diff <= 0) {
+        setIsExpired(true);
+        setTimeLeft('00:00');
+        clearInterval(interval);
+      } else {
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        setTimeLeft(`${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [booking.expiresAt]);
+
+  if (isExpired) {
+    return (
+      <div className="bg-red-500/10 border border-red-500/20 rounded p-4 text-center">
+        <div className="text-red-500 font-bold mb-1">Booking Expired</div>
+        <div className="text-xs text-red-500/80 mb-2">You ran out of time. The seats have been released.</div>
+        <button onClick={onClear} className="mt-4 text-xs font-bold text-red-500 hover:underline">
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  if (booking.status === 'confirmed') {
+    return (
+      <div className="bg-green-500/10 border border-green-500/20 rounded p-4 text-center">
+        <div className="text-green-500 font-bold mb-1">Booking Confirmed!</div>
+        <div className="text-xs text-green-500/80 mb-2">Your seats have been successfully reserved.</div>
+        <div className="text-xs text-green-500/60">ID: #{booking.id}</div>
+        <button onClick={onClear} className="mt-4 text-xs font-bold text-green-500 hover:underline">
+          Book Another
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-yellow-500/10 border border-yellow-500/20 rounded p-4 text-center animate-pulse">
+      <div className="text-yellow-500 font-bold mb-1">Booking Pending Approval</div>
+      <div className="text-xs text-yellow-500/80 mb-2">Please wait for admin confirmation.</div>
+      <div className="text-xl font-mono font-bold text-yellow-500 my-2">{timeLeft || '--:--'}</div>
+      <div className="text-xs text-yellow-500/60">ID: #{booking.id}</div>
+    </div>
+  );
+}
+
 export function BookingPage() {
   const { id } = useParams<{ id: string }>();
   const { data: show, isLoading, error } = useShow(id);
-  const { data: bookings } = useQuery({
-    queryKey: ['bookings', id],
-    queryFn: () => api.getBookingsByShow(id as string),
-    enabled: Boolean(id),
-  });
-
 
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { selectedSeats, toggleSeat, clearSelection, setSelectedShow, lastBooking, setLastBooking } =
-    useShowContext();
+  const { selectedSeats, toggleSeat, clearSelection, setSelectedShow, lastBooking, setLastBooking } = useShowContext();
+
+  // Fetch user's bookings to restore state and block new bookings
+  const { data: myBookings } = useQuery({
+    queryKey: ['my-bookings', user.email],
+    queryFn: () => api.getMyBookings(user.email!),
+    enabled: !!user.email,
+    refetchInterval: 5000 // Poll every 5s to check for status updates
+  });
+
+  // Actually, we want to find if there is a PENDING booking.
+  const pendingBooking = myBookings?.find(b =>
+    b.showId === Number(id) &&
+    b.status === 'pending' &&
+    (b.expiresAt ? new Date(b.expiresAt) > new Date() : true)
+  );
+
+  // Also check if we have a recently confirmed booking that we want to show success for.
+  // We can use `lastBooking` from context as a "recently actioned" marker, 
+  // OR just show the latest booking if it's recent.
+  // Le's rely on `pendingBooking` to block the form.
+
+  // Helper to handle polling updates
+  useEffect(() => {
+    if (pendingBooking && !lastBooking) {
+      setLastBooking(pendingBooking);
+    }
+    // If lastBooking was pending and now myBookings has it as confirmed, update lastBooking
+    if (lastBooking && myBookings) {
+      const updated = myBookings.find(b => b.id === lastBooking.id);
+      if (updated && updated.status !== lastBooking.status) {
+        setLastBooking(updated);
+      }
+      // If updated is missing (maybe expired/cancelled and filtered out?), handle that?
+      // MyBookings should return all.
+    }
+  }, [pendingBooking, myBookings, lastBooking, setLastBooking]);
+
   const seatsForShow = selectedSeats(id || '');
 
-  const [customerName, setCustomerName] = useState('Guest User');
-  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerName, setCustomerName] = useState(user.name || '');
+  const [customerEmail, setCustomerEmail] = useState(user.email || '');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const bookingMutation = useMutation({
@@ -63,21 +158,11 @@ export function BookingPage() {
       queryClient.invalidateQueries({ queryKey: ['bookings', id] });
       queryClient.invalidateQueries({ queryKey: ['shows'] });
       queryClient.invalidateQueries({ queryKey: ['show', id] });
+      queryClient.invalidateQueries({ queryKey: ['my-bookings'] }); // Refresh my bookings
+      clearSelection(id || '');
     },
     onError: (err: Error) => setErrorMsg(err.message),
   });
-
-  const cancelMutation = useMutation({
-    mutationFn: (id: number | string) => api.cancelBooking(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bookings', id] });
-      queryClient.invalidateQueries({ queryKey: ['shows'] });
-      queryClient.invalidateQueries({ queryKey: ['show', id] });
-    },
-    onError: (err: Error) => alert(`Failed to cancel booking: ${err.message}`),
-  });
-
-  // Mutations removed as per request to remove confirm/cancel buttons
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -101,155 +186,138 @@ export function BookingPage() {
   };
 
   if (isLoading) {
-    return <div className="page">Loading show…</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-pulse text-text-secondary text-sm font-medium uppercase tracking-widest">Loading Event...</div>
+      </div>
+    );
   }
+
   if (error || !show) {
     return (
-      <div className="page">
-        <div className="status-pill failed">Could not load show</div>
+      <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-lg">
+        Could not load show details.
       </div>
     );
   }
 
   const booked = bookedSeats(show);
+  const totalCost = seatsForShow.length * (show.price || 0);
 
   return (
-    <div className="page" style={{ display: 'grid', gap: 16 }}>
-      <div className="hero">
-        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <div className="label">Booking</div>
-            <h1 style={{ margin: '4px 0 0' }}>{show.name}</h1>
-            <p className="muted" style={{ margin: 0 }}>
-              {formatDate(show.startTime)} · {formatTime(show.startTime)}
-            </p>
-          </div>
-          <div className="pill">Total seats: {show.totalSeats}</div>
-        </div>
-        {show.description && <p style={{ margin: '12px 0 0' }}>{show.description}</p>}
-      </div>
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-      <div className="card" style={{ display: 'grid', gap: 12 }}>
-        <div className="section-title">
-          <h2>Select seats</h2>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <span className="status-pill confirmed">Available</span>
-            <span className="status-pill failed">Booked</span>
-            <span className="status-pill pending">Selected</span>
+      {/* Left Column: Event Info & Seat Selection */}
+      <div className="lg:col-span-8 space-y-8">
+        <div>
+          <div className="flex items-center gap-3 text-sm text-text-secondary mb-2 uppercase tracking-wide font-medium">
+            <span>{formatDate(show.startTime)}</span>
+            <span>•</span>
+            <span>{formatTime(show.startTime)}</span>
           </div>
+          <h1 className="text-3xl font-bold text-text-primary mb-4">{show.name}</h1>
+          {show.description && <p className="text-text-secondary">{show.description}</p>}
         </div>
-        <SeatGrid
-          total={show.totalSeats}
-          booked={booked}
-          selected={seatsForShow}
-          onToggle={(seat) => {
-            setSelectedShow(String(show.id));
-            toggleSeat(show.id, seat);
-          }}
-        />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div className="muted">
-            {seatsForShow.length} seat(s) selected · {show.totalSeats - booked.size} remaining
-          </div>
-          <button className="btn ghost" onClick={() => clearSelection(show.id)}>
-            Clear selection
-          </button>
-        </div>
-      </div>
 
-      {user.role !== 'admin' && (
-        <form className="card grid" style={{ gap: 12 }} onSubmit={handleSubmit}>
-          <div className="section-title">
-            <h2>Booking details</h2>
-            {bookingMutation.isPending && <span className="badge">Booking…</span>}
-          </div>
-          <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
-            <label className="grid" style={{ gap: 6 }}>
-              <span className="label">Your name</span>
-              <input
-                className="input"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                required
-              />
-            </label>
-            <label className="grid" style={{ gap: 6 }}>
-              <span className="label">Email</span>
-              <input
-                className="input"
-                type="email"
-                value={customerEmail}
-                onChange={(e) => setCustomerEmail(e.target.value)}
-                required
-              />
-            </label>
-          </div>
-          {errorMsg && <div className="status-pill failed">{errorMsg}</div>}
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <button className="btn" type="submit" disabled={bookingMutation.isPending}>
-              Book {seatsForShow.length || ''} seat(s)
-            </button>
-            {/* Confirm/Cancel buttons removed as per request */}
-          </div>
-          {lastBooking && (
-            <div className="callout" role="status">
-              Booking #{lastBooking.id} • Seats: {lastBooking.numSeats}{' '}
-              <BookingStatusBadge status={lastBooking.status as BookingStatus} />
+        <div className="bg-surface border border-border rounded-lg p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-text-primary">Select Seats</h2>
+            <div className="flex items-center gap-4 text-xs font-medium uppercase tracking-wider">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded bg-surface border border-border"></div>
+                <span className="text-text-secondary">Available</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded bg-primary border border-primary"></div>
+                <span className="text-text-primary">Selected</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded bg-surface border border-border opacity-50"></div>
+                <span className="text-text-secondary">Booked</span>
+              </div>
             </div>
-          )}
-        </form>
-      )}
+          </div>
 
-      <div className="card">
-        <div className="section-title">
-          <h2>Recent confirmed bookings</h2>
-          {!bookings?.length && <span className="badge">No confirmed bookings</span>}
+          <SeatGrid
+            total={show.totalSeats}
+            booked={booked}
+            selected={seatsForShow}
+            onToggle={(seat) => {
+              setSelectedShow(String(show.id));
+              toggleSeat(show.id, seat);
+            }}
+          />
         </div>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Seats</th>
-              <th>Status</th>
-              {user.role === 'admin' && <th>Action</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {bookings?.map((booking) => (
-              <tr key={booking.id}>
-                <td>{booking.id}</td>
-                <td>{booking.numSeats}</td>
-                <td>
-                  <BookingStatusBadge status={booking.status as BookingStatus} />
-                </td>
-                {user.role === 'admin' && (
-                  <td>
-                    <button
-                      className="btn danger sm"
-                      onClick={() => {
-                        if (confirm('Are you sure you want to delete this booking?')) {
-                          cancelMutation.mutate(booking.id);
-                        }
-                      }}
-                      disabled={cancelMutation.isPending}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                )}
-              </tr>
-            ))}
-            {!bookings?.length && (
-              <tr>
-                <td colSpan={3} className="muted">
-                  Nothing yet.
-                </td>
-              </tr>
+      </div>
+
+      {/* Right Column: Booking Summary & Form */}
+      <div className="lg:col-span-4">
+        <div className="sticky top-24 space-y-6">
+
+          {/* Booking Form Card */}
+          <div className="bg-surface border border-border rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-text-primary mb-6">Booking Summary</h3>
+
+            {seatsForShow.length > 0 ? (
+              <div className="mb-6 space-y-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-text-secondary">{seatsForShow.length} x Seat(s)</span>
+                  <span className="text-text-primary font-medium">₹{totalCost.toFixed(2)}</span>
+                </div>
+                <div className="pt-4 border-t border-border flex justify-between items-center">
+                  <span className="text-text-primary font-bold">Total</span>
+                  <span className="text-2xl font-bold text-primary">₹{totalCost.toFixed(2)}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="mb-6 p-4 bg-background border border-border rounded text-sm text-text-secondary text-center">
+                Select seats to proceed
+              </div>
             )}
-          </tbody>
-        </table>
+
+            {seatsForShow.length > 0 && !lastBooking ? (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="label-premium">Name</label>
+                  <input
+                    className="input-premium"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="label-premium">Email</label>
+                  <input
+                    className="input-premium"
+                    type="email"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    required
+                  />
+                </div>
+
+                {errorMsg && <div className="text-sm text-red-500">{errorMsg}</div>}
+
+                <button className="btn-primary w-full py-3" type="submit" disabled={bookingMutation.isPending}>
+                  {bookingMutation.isPending ? 'Processing...' : 'Confirm Booking'}
+                </button>
+
+                <button type="button" onClick={() => clearSelection(show.id)} className="w-full text-xs text-text-secondary hover:text-text-primary pt-2">
+                  Clear Selection
+                </button>
+              </form>
+            ) : lastBooking ? null : (
+              // If no seats selected and no last booking
+              null
+            )}
+
+            {lastBooking && (
+              <BookingSuccessCard booking={lastBooking} onClear={() => setLastBooking(undefined)} />
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
-

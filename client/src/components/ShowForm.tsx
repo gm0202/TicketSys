@@ -24,13 +24,12 @@ export function ShowForm({ initialData, onSuccess, onCancel }: ShowFormProps) {
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  // Load initial data if provided
   useEffect(() => {
     if (initialData) {
       setForm({
         name: initialData.name,
         description: initialData.description || '',
-        startTime: initialData.startTime.slice(0, 16), // Format to 'YYYY-MM-DDTHH:mm' for datetime-local
+        startTime: initialData.startTime.slice(0, 16),
         endTime: initialData.endTime ? initialData.endTime.slice(0, 16) : '',
         totalSeats: Number(initialData.totalSeats),
         price: Number(initialData.price || 0),
@@ -72,89 +71,98 @@ export function ShowForm({ initialData, onSuccess, onCancel }: ShowFormProps) {
   const isUpdate = Boolean(initialData);
 
   return (
-    <div className="card" style={{ marginBottom: 16 }}>
-      <div className="section-title">
-        <h2>{isUpdate ? 'Update details' : 'Create Show/Trip'}</h2>
-        {mutation.isPending && <span className="badge">Saving…</span>}
+    <div className="bg-surface border border-border rounded-lg p-6 mb-8">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-semibold text-text-primary">
+          {isUpdate ? 'Update Show Details' : 'Create New Show'}
+        </h2>
+        {mutation.isPending && (
+          <span className="text-xs font-medium text-primary uppercase tracking-wider animate-pulse">Saving...</span>
+        )}
       </div>
-      <form className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }} onSubmit={handleSubmit}>
-        <label className="grid" style={{ gap: 6 }}>
-          <span className="label">Name</span>
+
+      <form className="grid grid-cols-1 md:grid-cols-2 gap-6" onSubmit={handleSubmit}>
+        <div className="col-span-1 md:col-span-2">
+          <label className="label-premium">Show Name</label>
           <input
-            className="input"
+            className="input-premium"
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            placeholder="Route or doctor name"
+            placeholder="e.g. The Phantom of the Opera"
             required
           />
-        </label>
-        <label className="grid" style={{ gap: 6 }}>
-          <span className="label">Description</span>
+        </div>
+
+        <div className="col-span-1 md:col-span-2">
+          <label className="label-premium">Description</label>
           <input
-            className="input"
+            className="input-premium"
             value={form.description}
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            placeholder="Optional context"
+            placeholder="Optional details about the event"
           />
-        </label>
-        <label className="grid" style={{ gap: 6 }}>
-          <span className="label">Start time</span>
+        </div>
+
+        <div>
+          <label className="label-premium">Start Time</label>
           <input
             type="datetime-local"
-            className="input"
+            className="input-premium"
             value={form.startTime}
             onChange={(e) => setForm((f) => ({ ...f, startTime: e.target.value }))}
             required
           />
-        </label>
-        <label className="grid" style={{ gap: 6 }}>
-          <span className="label">End time</span>
+        </div>
+
+        <div>
+          <label className="label-premium">End Time</label>
           <input
             type="datetime-local"
-            className="input"
+            className="input-premium"
             value={form.endTime}
             onChange={(e) => setForm((f) => ({ ...f, endTime: e.target.value }))}
             required
           />
-        </label>
-        <label className="grid" style={{ gap: 6 }}>
-          <span className="label">Total seats</span>
+        </div>
+
+        <div>
+          <label className="label-premium">Total Seats</label>
           <input
             type="number"
             min={1}
-            className="input"
+            className="input-premium"
             value={form.totalSeats}
             onChange={(e) => setForm((f) => ({ ...f, totalSeats: Number(e.target.value) }))}
             required
           />
-        </label>
-        <label className="grid" style={{ gap: 6 }}>
-          <span className="label">Price</span>
+        </div>
+
+        <div>
+          <label className="label-premium">Price (₹)</label>
           <input
             type="number"
             min={0}
-            className="input"
+            className="input-premium"
             value={form.price}
             onChange={(e) => setForm((f) => ({ ...f, price: Number(e.target.value) }))}
             required
           />
-        </label>
-        <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button className="btn" type="submit" disabled={mutation.isPending}>
-            {isUpdate ? 'Update' : 'Create show'}
+        </div>
+
+        <div className="col-span-1 md:col-span-2 flex items-center gap-4 mt-2">
+          <button className="btn-primary min-w-[120px]" type="submit" disabled={mutation.isPending}>
+            {isUpdate ? 'Update Show' : 'Create Show'}
           </button>
 
           {isUpdate && onCancel && (
-            <button className="btn secondary" type="button" onClick={onCancel}>
+            <button className="btn-secondary" type="button" onClick={onCancel}>
               Cancel
             </button>
           )}
 
-          {error && <span className="status-pill failed">{error}</span>}
-          {mutation.isSuccess && !error && !isUpdate && <span className="status-pill confirmed">Created</span>}
+          {error && <span className="text-sm text-red-500">{error}</span>}
         </div>
       </form>
     </div>
   );
 }
-

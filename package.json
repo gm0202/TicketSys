@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "cd backend && rm -rf node_modules && npm install && npm run build",
-    "start": "cd backend && npm start"
+    "start": "cd backend && npm start",
+    "dev": "concurrently \"npm run dev --prefix client\" \"cross-env PORT=5000 npm run dev --prefix backend\""
   },
   "repository": {
     "type": "git",
@@ -53,6 +54,8 @@
     "@types/node": "^24.10.3",
     "@types/pg": "^8.16.0",
     "@types/swagger-jsdoc": "^6.0.4",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
     "nodemon": "^3.1.11",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",

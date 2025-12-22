@@ -2,7 +2,7 @@ import { AppDataSource } from '../config/database';
 import { Booking, BookingStatus } from '../models/booking.entity';
 import { Show } from '../models/show.entity';
 import { Seat } from '../models/seat.entity';
-import { MoreThan } from 'typeorm';
+import { MoreThan, ILike } from 'typeorm';
 import { withRetry } from '../utils/retry';
 
 const MAX_RETRIES = 3;
@@ -91,28 +91,9 @@ export class BookingService {
                 booking.customerName = customerName;
                 booking.customerEmail = customerEmail;
                 booking.numSeats = numSeats;
-                booking.status = BookingStatus.PENDING; // Initially pending, waiting for confirmation logic removal? 
-                // User asked to REMOVE confirm button, so maybe we should auto-confirm or leave as pending but auto-confirm later?
-                // The prompt said "user shouldn't be able to confirm their own tickets remove this confirm ticket button completely"
-                // It implied the user shouldn't confirm, but maybe the SYSTEM confirms?
-                // OR maybe the booking just stays pending?
-                // HOWEVER, if we remove the confirm button, how does it become confirmed?
-                // Maybe the user implies "The user shouldn't confirm, it should just BE booked".
-                // I'll stick to 'PENDING' for now as per the existing flow, but if I remove the confirm button, I might need to make it CONFIRMED immediately?
-                // Let's re-read: "the user shouldn't be able to confirm their own tickets remove this confirm ticket button completly"
-                // This usually implies an admin confirms, OR it's auto-confirmed payment, etc. 
-                // But given this is a simple app, and the previous flow was "User clicks book -> User clicks confirm", maybe now "User clicks book -> DONE"?
-                // If I leave it PENDING and remove the button, the user is stuck.
-                // Re-reading: "the seats which the users have selected should get chosen exactly".
-                // I will set it to CONFIRMED immediately to simplify, assuming "removal of confirm button" means "don't ask me to confirm again".
-                // ERROR: The user said "user shouldn't be able to confirm their own tickets". This might mean Admin must confirm.
-                // Let's look at `NavLinks`: there is an `Admin` link.
-                // If I set it to `CONFIRMED`, that risks bypassing "approval".
-                // BUT, typically "check confirm" is a user UX step.
-                // Let's check `AdminApprovalsPage` or similar if it exists?
-                // `c:\Users\91852\OneDrive\Desktop\Modex\Ticket-Booking-System\client\src\pages` has `AdminApprovalsPage.tsx`.
-                // Aha! So the ADMIN should confirm.
-                // So I should keep it PENDING.
+                booking.seatNumbers = seatNumbers;
+                booking.status = BookingStatus.PENDING;
+                booking.expiresAt = new Date(Date.now() + BOOKING_EXPIRY_MS);
 
                 booking.totalAmount = Number(show.price || 0) * numSeats;
                 const savedBooking = await transactionalEntityManager.save(booking);
@@ -141,7 +122,7 @@ export class BookingService {
                     await transactionalEntityManager.save(seat);
                 }
 
-                // Set a timeout to expire the booking if not confirmed (by admin now?)
+                // Set a timeout to expire the booking if not confirmed
                 setTimeout(() => {
                     this.expireBooking(savedBooking.id).catch(error => {
                         console.error('Error expiring booking:', error);
@@ -249,6 +230,13 @@ export class BookingService {
 
                     if (booking.status === BookingStatus.PENDING) {
                         booking.status = BookingStatus.EXPIRED;
+
+                        // Release blocked seats
+                        await transactionalEntityManager.update(Seat,
+                            { bookingId: numericId },
+                            { isBooked: false, bookingId: null }
+                        );
+
                         await transactionalEntityManager.save(booking);
                         console.log(`Booking ${bookingId} expired successfully`);
                     }
@@ -274,15 +262,26 @@ export class BookingService {
                 select: [
                     'id',
                     'customerName',
+                    'customerEmail',
                     'numSeats',
+                    'seatNumbers',
                     'status',
-                    'createdAt'
+                    'createdAt',
+                    'expiresAt'
                 ]
             });
         } catch (error) {
             console.error('Error getting bookings by show:', error);
             throw error;
         }
+    }
+
+    async getUserBookings(email: string): Promise<Booking[]> {
+        return AppDataSource.getRepository(Booking).find({
+            where: { customerEmail: ILike(email) },
+            relations: ['show'],
+            order: { createdAt: 'DESC' }
+        });
     }
 }
 
