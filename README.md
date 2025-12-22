@@ -10,8 +10,8 @@ Inspired by platforms like BookMyShow & RedBus, engineered to prevent **overbook
 ➡️ [[https://ticket-booking-system-git-try-gaurangs-projects-1eb2dfac.vercel.app](https://ticket-sys-delta.vercel.app/)]
 
 ### **Backend (Railway)**  
-➡️ ticketsys-production.up.railway.app 
-
+➡️ [ticketsys-production.up.railway.app 
+](https://ticketsys-production.up.railway.app/)
 ### **Tutorial (YouTube)**  
 ➡️ https://youtu.be/aSVVHMC6ZWs?si=7ivimR3kQQJjSdh0
 
