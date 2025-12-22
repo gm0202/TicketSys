@@ -16,7 +16,7 @@ export const AppDataSource = new DataSource(
             url: process.env.DATABASE_URL,
             ssl: { rejectUnauthorized: false },
             entities: [Show, Booking, Seat, User],
-            synchronize: true,
+            synchronize: false,
             logging: false,
         }
         : {
@@ -28,7 +28,7 @@ export const AppDataSource = new DataSource(
             database: process.env.DB_DATABASE || "ticket_booking",
             ssl: false,
             entities: [Show, Booking, Seat, User],
-            synchronize: true,
+            synchronize: false,
             logging: true,
         }
 );
