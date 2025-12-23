@@ -9,7 +9,7 @@ import type {
   LoginInput,
 } from '../types';
 
-const DEFAULT_BASE = 'https://ticket-booking-system-production-10ea.up.railway.app/api';
+const DEFAULT_BASE = 'https://ticketsys-production.up.railway.app/api';
 
 const apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || DEFAULT_BASE;
 const showPath = (import.meta.env.VITE_API_SHOWS_PATH as string | undefined) || '/shows';
